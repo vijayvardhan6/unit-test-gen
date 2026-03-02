@@ -1,0 +1,17 @@
+[tool.pytest.ini_options]
+# Make the 'data' package importable in tests
+pythonpath = ["src"]
+# Tell pytest where to discover tests
+testpaths = ["tests"]
+# Enable coverage + reports
+addopts = "-q --cov=src/data --cov-branch --cov-report=term-missing --cov-report=html --cov-report=xml --cov-report=json"
+
+[tool.coverage.run]
+branch = true
+# Measure only your app code, not tests
+source = ["src/data"]
+omit = ["**/__pycache__/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

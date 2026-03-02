@@ -1,0 +1,211 @@
+digraph IntelligentTestGeneratorV3_Phase1 {
+  rankdir=TB;
+  bgcolor="#ffffff";
+  fontname="Helvetica";
+  fontsize=12;
+  nodesep=0.4;
+  ranksep=0.8;
+  center=true;
+
+  node [
+    shape=box
+    style="rounded,filled"
+    fillcolor="#f8f9fb"
+    color="#c3c7d0"
+    fontname="Helvetica"
+    fontcolor="#111827"
+    penwidth=1.2
+  ];
+  edge [
+    color="#6b7280"
+    fontname="Helvetica"
+    fontsize=10
+    arrowsize=0.7
+    penwidth=1.1
+  ];
+
+  Start [shape=circle, label="Start", fillcolor="#e3f2fd", color="#90caf9", width=1];
+  End   [shape=doublecircle, label="End", fillcolor="#e3f2fd", color="#90caf9", width=1];
+  
+  Decision [
+    shape=diamond, 
+    label="Should\nIterate?", 
+    fillcolor="#fff3e0", 
+    color="#ffb74d", 
+    width=2.2,
+    height=1.2
+  ];
+
+  INGEST [
+    label="INGEST\n• Collect source files\n• Parse AST → public functions/classes\n• Build minimal context map per target\n• Analyze branch complexity", 
+    fillcolor="#e6fffa", 
+    color="#5eead4", 
+    width=5
+  ];
+  
+  GENERATE [
+    label="GENERATE (Batched)\n• Process 15 targets per LLM call\n• Provide minimal context + dependencies\n• Coverage-focused prompts:\n  'Generate 3-6 assertions per test'\n  'Cover all branches explicitly'\n• Generate both happy path + edge cases", 
+    fillcolor="#ede9fe", 
+    color="#c4b5fd", 
+    width=5
+  ];
+  
+  WRITE [
+    label="WRITE\n• Combine per-target tests by module\n• Deduplicate imports\n• Write to test files in test_root/\n• Track: state.test_file", 
+    fillcolor="#ecfdf5", 
+    color="#86efac", 
+    width=5
+  ];
+  
+  DEPS [
+    label="DEPENDENCY INSTALLER\n• Extract imports from source + tests\n• Filter: third-party only (skip stdlib)\n• Auto-install via pip (if enabled)\n• Track: installed/failed packages", 
+    fillcolor="#fef3c7", 
+    color="#fbbf24", 
+    width=5
+  ];
+  
+  EXECUTOR [
+    label="EXECUTOR\n• Run pytest via subprocess\n• Set PYTHONPATH from project_root\n• Generate JUnit XML report\n• Classify: passed/failed/errors/skipped\n• Log failures for debugging", 
+    fillcolor="#f5f3ff", 
+    color="#a78bfa", 
+    width=5
+  ];
+  
+  COVERAGE [
+    label="COVERAGE ANALYZER\n• Run pytest with --cov=src/data\n• Measure per-file coverage\n• Generate: JSON + HTML + XML reports\n• Extract: overall % + per-file %\n• Identify: files < 80%", 
+    fillcolor="#eff6ff", 
+    color="#93c5fd", 
+    width=5
+  ];
+
+  PATTERN_CLASSIFIER [
+    label="PATTERN CLASSIFIER ⭐ NEW\n• Parse coverage.json + source AST\n• Classify gap patterns:\n  - Uncovered branches (if/else/elif)\n  - Exception paths (try/except/raise)\n  - Edge cases (None, empty, boundaries)\n  - Loop variations (for/while)\n  - State mutations (self.attr =)\n• Assign confidence score (0-1)\n• Calculate complexity per pattern\n• Prioritize patterns (1-5)\n• Extract code context snippets\n• Output: List[CoveragePattern]", 
+    fillcolor="#fce4ec", 
+    color="#f06292", 
+    width=5.5
+  ];
+
+  ANALYZE [
+    label="ANALYZE GAPS (Enhanced)\n• Parse coverage.json for uncovered lines\n• Map uncovered lines → functions\n• NEW: Enrich with pattern classifications\n• NEW: Match patterns to targets\n• Build list of failing_functions:\n  [{name, module, uncovered_lines,\n    patterns, complexity_score}]\n• Increment: iteration_count", 
+    fillcolor="#fff9c4", 
+    color="#fdd835", 
+    width=5
+  ];
+
+  SMART_PRIORITIZER [
+    label="SMART PRIORITIZER ⭐ NEW\n• Input: failing_functions + patterns\n• Calculate priority scores:\n  - Coverage impact potential (30%)\n  - Pattern importance (30%)\n  - Complexity score (20%)\n  - Previous success rate (10%)\n  - Critical path analysis (10%)\n• Rank all targets by score\n• Select top N targets (default: 10)\n• Skip low-ROI targets\n• Generate prioritization reasoning\n• Output: prioritized_targets (ordered)\n• Track: skipped_targets", 
+    fillcolor="#e8f5e9", 
+    color="#66bb6a", 
+    width=5.5
+  ];
+  
+  SUPPLEMENT [
+    label="SUPPLEMENT TESTS (Enhanced)\n• For each PRIORITIZED target (not all):\n  - Extract existing test code\n  - NEW: Use pattern-specific prompts:\n    * Branch → conditional tests\n    * Exception → pytest.raises tests\n    * Edge case → boundary value tests\n    * Loop → iteration tests\n  - Show uncovered line numbers\n  - Provide function source code\n  - Include pattern classification\n  - LLM generates 2-6 tests\n    (count varies by complexity)\n• Additive only (no regeneration)", 
+    fillcolor="#e1bee7", 
+    color="#ba68c8", 
+    width=5
+  ];
+  
+  APPEND [
+    label="APPEND TESTS\n• Append new tests to existing file\n• Preserve all original tests\n• Mark with comment:\n  '# Iteration {N} - Gap Coverage'\n  '# Pattern: {pattern_type}'\n• Update: state.test_file (same path)", 
+    fillcolor="#ecfdf5", 
+    color="#86efac", 
+    width=5
+  ];
+
+  FINALIZE [
+    label="FINALIZE (Enhanced)\n• Generate summary report:\n  - Overall coverage: X.X%\n  - Per-file breakdown\n  - Tests: X passed, Y failed\n  - Iterations executed: N\n  - Functions still < 80% (if any)\n  - NEW: Pattern distribution\n  - NEW: Prioritization decisions\n  - NEW: Coverage gain per iteration\n• Save report to: reports/summary.json\n• Log actionable insights", 
+    fillcolor="#f0fdf4", 
+    color="#86efac", 
+    width=5
+  ];
+
+  Start -> INGEST [label="", penwidth=1.5];
+  
+  INGEST -> GENERATE [
+    label="source_map\ntargets\ncontexts", 
+    fontcolor="#065f46", 
+    penwidth=1.5
+  ];
+  
+  GENERATE -> WRITE [
+    label="generated_tests\n(by module)", 
+    fontcolor="#065f46"
+  ];
+  
+  WRITE -> DEPS [
+    label="test_file\nwritten", 
+    fontcolor="#374151"
+  ];
+  
+  DEPS -> EXECUTOR [
+    label="dependencies\ninstalled", 
+    fontcolor="#065f46"
+  ];
+  
+  EXECUTOR -> COVERAGE [
+    label="tests\nexecuted", 
+    fontcolor="#374151"
+  ];
+  
+  COVERAGE -> PATTERN_CLASSIFIER [
+    label="coverage_report\nuncovered_lines", 
+    fontcolor="#374151",
+    penwidth=1.5,
+    color="#c62828"
+  ];
+
+  PATTERN_CLASSIFIER -> Decision [
+    label="coverage_patterns\nclassifications", 
+    fontcolor="#c62828",
+    penwidth=1.3
+  ];
+
+  Decision -> FINALIZE [
+    label="✓ coverage ≥ 80%\nOR\n✗ iterations ≥ max\nOR\n✗ no progress", 
+    fontcolor="#065f46", 
+    penwidth=2,
+    color="#2e7d32"
+  ];
+  
+  Decision -> ANALYZE [
+    label="⟳ coverage < 80%\nAND iterations < max\nAND making progress", 
+    fontcolor="#d32f2f", 
+    penwidth=1.8,
+    color="#c62828"
+  ];
+
+  ANALYZE -> SMART_PRIORITIZER [
+    label="failing_functions\nenriched_metadata", 
+    fontcolor="#f57c00", 
+    penwidth=1.5
+  ];
+
+  SMART_PRIORITIZER -> SUPPLEMENT [
+    label="prioritized_targets\n(top N only)", 
+    fontcolor="#2e7d32", 
+    penwidth=1.5,
+    color="#66bb6a"
+  ];
+  
+  SUPPLEMENT -> APPEND [
+    label="supplemental_tests\n(2-6 per target)", 
+    fontcolor="#7b1fa2",
+    penwidth=1.5
+  ];
+  
+  APPEND -> EXECUTOR [
+    label="tests appended\n(skip DEPS)", 
+    fontcolor="#374151",
+    style="dashed",
+    penwidth=1.3
+  ];
+  
+
+  FINALIZE -> End [
+    label="summary_report\nwith intelligence metrics", 
+    fontcolor="#374151",
+    penwidth=1.5
+  ];
+
+}
